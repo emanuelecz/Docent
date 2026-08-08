@@ -1,10 +1,15 @@
 from schemas.issues_schemas import FetchedIssue
 import requests
+from core.config import get_settings
+
+settings = get_settings()
+REPO_OWNER = settings.repo_owner
+REPO_NAME = settings.repo_name
 
 def fetch_latest_open_issue(token:str):
   query = """
-    query {
-      search(query: "repo:fastapi/fastapi is:issue is:open sort:created-desc", type: ISSUE, first: 1) {
+    query($q: String!) {
+      search(query: $q, type: ISSUE, first: 1) {
         edges {
           node {
             ... on Issue {
@@ -13,16 +18,18 @@ def fetch_latest_open_issue(token:str):
               url
               body
               closedAt
+              labels(first: 10) { nodes { name } }
             }
           }
         }
       }
     }
     """
+  variables = {"q": f"repo:{REPO_OWNER}/{REPO_NAME} is:issue is:open sort:created-desc"}
   headers = {"Authorization": f"Bearer {token}"}
   response = requests.post(
-      "https://api.github.com/graphql", 
-      json={"query": query}, 
+      "https://api.github.com/graphql",
+      json={"query": query, "variables": variables},
       headers=headers
   )
   response.raise_for_status()
@@ -47,13 +54,14 @@ def fetch_latest_open_issue(token:str):
       url=url,
       original_question=original_question,
       closed_at=closed_at,
+      tags=_labels(node),
     )
   return open_issue
 
 
 CLOSED_ISSUES_QUERY="""
-query($cursor:String){
-  repository(owner:"fastapi", name:"fastapi"){
+query($cursor:String, $owner:String!, $name:String!){
+  repository(owner:$owner, name:$name){
     issues(first:100, after:$cursor, states:CLOSED, orderBy:{field:CREATED_AT, direction:DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
@@ -62,6 +70,7 @@ query($cursor:String){
         url
         body
         closedAt
+        labels(first:10) { nodes { name } }
         timelineItems(itemTypes:[CLOSED_EVENT], last:1) {
           nodes { ... on ClosedEvent { closer { ... on PullRequest { body } } } }
         }
@@ -91,6 +100,10 @@ _NOISE_MARKERS = (
     "automatically closed",
     "assuming the original need",
 )
+
+
+def _labels(node: dict) -> list[str]:
+    return [n.get("name", "") for n in (node.get("labels") or {}).get("nodes", [])]
 
 
 def _looks_like_fix(text: str) -> bool:
@@ -128,13 +141,14 @@ def _node_to_fetched_issue(node: dict) -> FetchedIssue:
         original_question=original_question,
         closed_at=closed_at,
         fix_summary=fix_summary,
+        tags=_labels(node),
     )
 
 
 def fetch_closed_issues_page(token: str, cursor: str | None = None):
   resp = requests.post(
     "https://api.github.com/graphql",
-    json={"query": CLOSED_ISSUES_QUERY, "variables": {"cursor": cursor}},
+    json={"query": CLOSED_ISSUES_QUERY, "variables": {"cursor": cursor, "owner": REPO_OWNER, "name": REPO_NAME}},
     headers={"Authorization": f"Bearer {token}"},
   )
   resp.raise_for_status()

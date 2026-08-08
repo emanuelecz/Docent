@@ -11,6 +11,7 @@ def create_issue(db:Session,issue: IssueCreate):
         fix_summary=issue.fix_summary,
         url=issue.url,
         closed_at= issue.closed_at,
+        tags=issue.tags,
         embeddings=issue.embeddings
     )
     db.add(db_issue)

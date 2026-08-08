@@ -37,6 +37,7 @@ def backfill_corpus_page(cursor:str | None = None, remaining:int = 1500):
                     fix_summary=i.fix_summary,
                     url=i.url,
                     closed_at= i.closed_at,
+                    tags=i.tags,
                     embeddings= vec,
                 )
                 for i, vec in zip(filtered, vectors)

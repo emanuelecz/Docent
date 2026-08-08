@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import func
+from sqlalchemy import func, String
+from sqlalchemy.dialects.postgresql import ARRAY
 from datetime import datetime
 import uuid
 from pgvector.sqlalchemy import Vector
@@ -16,5 +17,6 @@ class Issue(Base):
     url: Mapped[str]
     closed_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    tags: Mapped[list[str]] = mapped_column(ARRAY(String), default=list, server_default="{}")
     embeddings:Mapped[list[float]] = mapped_column(Vector(1024))
     

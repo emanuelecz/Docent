@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     repo_owner:str
     repo_name:str
     
+    github_pat_key:str
+
+    
 @lru_cache
 def get_settings() -> Settings:
     return Settings()

@@ -83,6 +83,25 @@ query($cursor:String, $owner:String!, $name:String!){
 """
 
 
+OPEN_ISSUES_QUERY = """
+query($cursor:String, $owner:String!, $name:String!){
+  repository(owner:$owner, name:$name){
+    issues(first:100, after:$cursor, states:OPEN, orderBy:{field:CREATED_AT, direction:DESC}) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number
+        title
+        url
+        body
+        closedAt
+        labels(first:10) { nodes { name } }
+      }
+    }
+  }
+}
+"""
+
+
 _NOISE_MARKERS = (
     "please follow",
     "issue template",
@@ -161,4 +180,82 @@ def fetch_closed_issues_page(token: str, cursor: str | None = None):
   page_info = conn["pageInfo"]
   issues = [_node_to_fetched_issue(n) for n in conn["nodes"]]
   return issues, page_info["endCursor"], page_info["hasNextPage"], payload["rateLimit"]
+
+
+def fetch_all_open_issues(token: str) -> list[FetchedIssue]:
+  issues: list[FetchedIssue] = []
+  cursor: str | None = None
+  while True:
+    resp = requests.post(
+      "https://api.github.com/graphql",
+      json={"query": OPEN_ISSUES_QUERY, "variables": {"cursor": cursor, "owner": REPO_OWNER, "name": REPO_NAME}},
+      headers={"Authorization": f"Bearer {token}"},
+    )
+    resp.raise_for_status()
+    body = resp.json()
+    if body.get("errors"):
+      raise RuntimeError(f"GitHub GraphQL error: {body['errors']}")
+
+    conn = body["data"]["repository"]["issues"]
+    issues.extend(_node_to_fetched_issue(n) for n in conn["nodes"])
+
+    page_info = conn["pageInfo"]
+    if not page_info["hasNextPage"]:
+      break
+    cursor = page_info["endCursor"]
+
+  return issues
+
+
+_ISSUE_FIELDS = """
+    number
+    title
+    url
+    body
+    closedAt
+    labels(first:10) { nodes { name } }
+    timelineItems(itemTypes:[CLOSED_EVENT], last:1) {
+      nodes { ... on ClosedEvent { closer { ... on PullRequest { body } } } }
+    }
+    comments(last:1) { nodes { body } }
+"""
+
+
+def fetch_closed_issues_by_number(token: str, numbers) -> list[FetchedIssue]:
+  numbers = list(numbers)
+  if not numbers:
+    return []
+
+  headers = {"Authorization": f"Bearer {token}"}
+  issues: list[FetchedIssue] = []
+
+  for start in range(0, len(numbers), 50):
+    chunk = numbers[start:start + 50]
+    aliases = "\n".join(
+      f"i{n}: issue(number: {n}) {{ {_ISSUE_FIELDS} }}" for n in chunk
+    )
+    query = f"""
+    query($owner:String!, $name:String!){{
+      repository(owner:$owner, name:$name){{
+    {aliases}
+      }}
+    }}
+    """
+    resp = requests.post(
+      "https://api.github.com/graphql",
+      json={"query": query, "variables": {"owner": REPO_OWNER, "name": REPO_NAME}},
+      headers=headers,
+    )
+    resp.raise_for_status()
+    body = resp.json()
+    if body.get("errors"):
+      raise RuntimeError(f"GitHub GraphQL error: {body['errors']}")
+
+    repo = body["data"]["repository"]
+    for n in chunk:
+      node = repo.get(f"i{n}")
+      if node:
+        issues.append(_node_to_fetched_issue(node))
+
+  return issues
 

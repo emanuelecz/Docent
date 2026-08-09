@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
-from database.models.issue import Issue
+from database.models.closed_issue import ClosedIssue
 from schemas.issues_schemas import IssueCreate
 
 
 def create_issue(db:Session,issue: IssueCreate):
-    db_issue = Issue(
+    db_issue = ClosedIssue(
         github_number = issue.github_number,
         title=issue.title,
         original_question=issue.original_question,

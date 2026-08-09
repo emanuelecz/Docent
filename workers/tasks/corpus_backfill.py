@@ -3,7 +3,7 @@ import os
 
 from rag.embeddings.embed_issue import embed_texts, issue_embed_text
 from database.db import SessionLocal
-from database.models.issue import Issue
+from database.models.closed_issue import ClosedIssue
 from ingestion.issues import fetch_closed_issues_page
 from rag.embeddings.voyage_client import get_embedding_client
 from workers.celery_app import app
@@ -21,7 +21,7 @@ def backfill_corpus_page(cursor:str | None = None, remaining:int = 1500):
         for issue in issues:
             if not issue.fix_summary:
                 continue
-            exists = db.query(Issue.github_number).filter(Issue.github_number == issue.github_number).first()
+            exists = db.query(ClosedIssue.github_number).filter(ClosedIssue.github_number == issue.github_number).first()
             if exists:
                 continue
             filtered.append(issue)
@@ -30,7 +30,7 @@ def backfill_corpus_page(cursor:str | None = None, remaining:int = 1500):
             vectors = embed_texts(client, texts)
             
             rows = [
-                Issue(
+                ClosedIssue(
                     github_number= i.github_number,
                     title= i.title,
                     original_question=i.original_question,

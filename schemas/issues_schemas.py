@@ -14,3 +14,6 @@ class FetchedIssue(BaseModel):
 
 class IssueCreate(FetchedIssue):
     embeddings: list[float]
+
+class PreparedIssue(FetchedIssue):
+    body_summary: str

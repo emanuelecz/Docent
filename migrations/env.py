@@ -16,7 +16,8 @@ if config.config_file_name is not None:
 
 import os
 from database.db import Base
-import database.models.issue  # noqa: F401  (registers the Issue table on Base.metadata)
+import database.models.closed_issue  # noqa: F401  (registers the closed-issues table on Base.metadata)
+import database.models.open_issue  # noqa: F401  (registers the open-issues table on Base.metadata)
 
 # Use the app's DATABASE_URL (psycopg2 driver), matching database/db.py.
 _db_url = os.getenv("DATABASE_URL", "")

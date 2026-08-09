@@ -3,7 +3,7 @@ import os
 from sqlalchemy.orm import Session
 
 from database.db import SessionLocal
-from database.models.issue import Issue
+from database.models.closed_issue import ClosedIssue
 from ingestion.issues import fetch_closed_issues_page
 from rag.embeddings.embed_issue import embed_texts, issue_embed_text
 from rag.embeddings.voyage_client import get_embedding_client
@@ -21,8 +21,8 @@ def poll_github_issues():
     try:
         new_issues = []
         for issue in issues:
-            exists = db.query(Issue.github_number).filter(
-                Issue.github_number == issue.github_number
+            exists = db.query(ClosedIssue.github_number).filter(
+                ClosedIssue.github_number == issue.github_number
             ).first()
             if exists:
                 break
@@ -36,7 +36,7 @@ def poll_github_issues():
         texts = [issue_embed_text(i) for i in new_issues]
         vectors = embed_texts(client, texts)
         rows = [
-            Issue(
+            ClosedIssue(
                 github_number=i.github_number,
                 title=i.title,
                 original_question=i.original_question,

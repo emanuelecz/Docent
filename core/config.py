@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     debug:bool = False
     request_timeout:int = 30
 
+    rerank_model:str = "rerank-2.5"
+
     repo_owner:str
     repo_name:str
 

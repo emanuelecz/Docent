@@ -1,13 +1,13 @@
 from voyageai import Client
 
-def embed_issue_text(client: Client,text: str = "") ->list[float]:
+def embed_issue_text(client: Client, text: str = "", input_type: str = "document") -> list[float]:
     if not text:
         raise ValueError("Cannot embedd an empty string")
-    result = client.embed([text], model="voyage-4", input_type="document")
+    result = client.embed([text], model="voyage-4", input_type=input_type, output_dimension=1024)
     return result.embeddings[0]
 
-def issue_embed_text(issue) -> str:
-    return f"Title: {issue.title}\n Question:  {issue.original_question}"
+def issue_embed_text(title:str, original_question:str) -> str:
+    return f"Title: {title}\n Question:  {original_question}"
 
 
 def embed_texts(client:Client, texts: list[str], batch_size:int=128)-> list[list[float]]:

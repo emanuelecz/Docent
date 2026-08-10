@@ -8,7 +8,6 @@ from ingestion.issues import fetch_closed_issues_page
 from rag.embeddings.voyage_client import get_embedding_client
 from workers.celery_app import app
 
-client = get_embedding_client()
 TOKEN = os.getenv("GITHUB_PAT_KEY")
 
 
@@ -26,7 +25,8 @@ def backfill_corpus_page(cursor:str | None = None, remaining:int = 1500):
                 continue
             filtered.append(issue)
         if filtered:
-            texts = [issue_embed_text(i) for i in filtered]
+            texts = [issue_embed_text(i.title, i.original_question) for i in filtered]
+            client = get_embedding_client()
             vectors = embed_texts(client, texts)
             
             rows = [

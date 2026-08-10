@@ -10,7 +10,6 @@ from core.config import get_settings
 
 
 settings = get_settings()
-client = get_embedding_client()
 TOKEN = settings.github_pat_key
 
 
@@ -35,7 +34,8 @@ def ingest_closed_issues(closed_numbers):
             new_issues.append(issue)
 
         if new_issues:
-            texts = [issue_embed_text(i) for i in new_issues]
+            texts = [issue_embed_text(i.title, i.original_question) for i in new_issues]
+            client = get_embedding_client()
             vectors = embed_texts(client, texts)
             rows = [
                 ClosedIssue(

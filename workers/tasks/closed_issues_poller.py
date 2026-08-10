@@ -9,7 +9,6 @@ from rag.embeddings.embed_issue import embed_texts, issue_embed_text
 from rag.embeddings.voyage_client import get_embedding_client
 from workers.celery_app import app
 
-client = get_embedding_client()
 TOKEN = os.getenv("GITHUB_PAT_KEY")
 
 
@@ -33,7 +32,8 @@ def poll_github_issues():
         if not new_issues:
             return {"new_issues": 0}
 
-        texts = [issue_embed_text(i) for i in new_issues]
+        texts = [issue_embed_text(i.title, i.original_question) for i in new_issues]
+        client = get_embedding_client()
         vectors = embed_texts(client, texts)
         rows = [
             ClosedIssue(

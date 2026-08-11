@@ -6,11 +6,25 @@ from ai.prompts.summary_llm_prompt import (
     SUMMARY_SYSTEM_PROMPT,
     SUMMARY_USER_TEMPLATE,
 )
+from ai.prompts.research_prompt import (
+    RESEARCH_SYSTEM_PROMPT,
+    RESEARCH_USER_TEMPLATE,
+    RESEARCH_FINALIZE_INSTRUCTION,
+)
+from ai.prompts.draft_prompt import (
+    DRAFT_SYSTEM_PROMPT,
+    DRAFT_USER_TEMPLATE,
+)
 
 
 class PromptSettings(BaseModel):
     summary_system_prompt: str = SUMMARY_SYSTEM_PROMPT
     summary_user_template: str = SUMMARY_USER_TEMPLATE
+    research_system_prompt: str = RESEARCH_SYSTEM_PROMPT
+    research_user_template: str = RESEARCH_USER_TEMPLATE
+    research_finalize_instruction: str = RESEARCH_FINALIZE_INSTRUCTION
+    draft_system_prompt: str = DRAFT_SYSTEM_PROMPT
+    draft_user_template: str = DRAFT_USER_TEMPLATE
 
 
 class Settings(BaseSettings):
@@ -37,6 +51,10 @@ class Settings(BaseSettings):
     repo_name:str
 
     github_pat_key:str
+    
+    research_model:str = "claude-sonnet-4-6"
+    research_max_iterations: int = 6
+    github_mcp_url:str = "https://api.githubcopilot.com/mcp/"
 
     prompts: PromptSettings = Field(default_factory=PromptSettings)
 

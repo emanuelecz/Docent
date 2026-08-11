@@ -32,7 +32,7 @@ target_metadata = Base.metadata
 
 def include_object(obj, name, type_, reflected, compare_to):
     # pgvector's Vector type isn't understood by autogenerate; never diff it.
-    if type_ == "column" and name == "embeddings":
+    if type_ == "column" and name in ("embeddings", "search_vector"):
         return False
     return True
 
